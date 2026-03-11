@@ -28,11 +28,12 @@ def reset_password_dialog():
     pass_sah = st.text_input("Sahkan Kata Laluan Baharu:", type="password")
     
     if st.button("Simpan Kata Laluan", use_container_width=True):
-        if id_sah == "fakhrul" and pass_baru == pass_sah and pass_baru != "":
-            st.success("✅ Kata laluan berjaya dikemaskini!")
+        # Tambah ID Aniq dan Umar dalam senarai yang dibenarkan
+        if id_sah in ["fakhrul", "aniq", "umar"] and pass_baru == pass_sah and pass_baru != "":
+            st.success(f"✅ Kata laluan untuk {id_sah} berjaya dikemaskini!")
             st.rerun()
         else:
-            st.error("❌ Maklumat tidak sepadan atau kosong.")
+            st.error("❌ Maklumat tidak sepadan atau ID tidak sah.")
 
 def check_password():
     if "password_correct" not in st.session_state:
@@ -44,8 +45,10 @@ def check_password():
             st.markdown("<br>", unsafe_allow_html=True)
             
             if st.button("Log Masuk", use_container_width=True):
-                if user_id == "fakhrul" and password == "123":
+                # Kemaskini senarai ID: fakhrul, aniq, umar
+                if user_id.lower() in ["fakhrul", "aniq", "umar"] and password == "123":
                     st.session_state["password_correct"] = True
+                    st.session_state["user_logged_in"] = user_id.capitalize()
                     st.rerun()
                 else:
                     st.error("😕 ID atau Kata Laluan salah.")
@@ -58,12 +61,15 @@ def check_password():
 # ================== MAIN APP (SELEPAS LOGIN) ==================
 if check_password():
     
+    # Ambil nama pengguna yang sedang log masuk
+    nama_user = st.session_state.get("user_logged_in", "User")
+
     # --- 👤 PROFIL PENGGUNA DI SIDEBAR ---
     st.sidebar.markdown(
         f"""
         <div style="background: linear-gradient(135deg, #00B4DB, #0083B0); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" width="80" style="border-radius: 50%; border: 3px solid white;">
-            <h3 style="color: white; margin-top: 10px; font-family: sans-serif;">Hai, Fakhrul!</h3>
+            <h3 style="color: white; margin-top: 10px; font-family: sans-serif;">Hai, {nama_user}!</h3>
             <p style="color: #e0e0e0; font-size: 0.8em; margin-bottom: 0px;">Surveyor Berdaftar</p>
         </div>
         """, unsafe_allow_html=True
@@ -72,7 +78,6 @@ if check_password():
     # --- HEADER DENGAN LOGO ---
     col_logo, col_text = st.columns([1.2, 4])
     with col_logo:
-        # Kod untuk memaparkan logo_puo.png dalam bulatan merah yang anda tanda
         if os.path.exists("logo_puo.png"):
             st.image("logo_puo.png", width=220)
         else:
@@ -190,7 +195,7 @@ if check_password():
             else: st.error("❌ Kolum STN, E, N tak jumpa dalam CSV!")
         except Exception as e: st.error(f"❌ Ada ralat: {e}")
     else:
-        st.info("👋 Sila muat naik fail CSV di bar sisi untuk memulakan analisis lot.")
+        st.info(f"👋 Selamat Datang, {nama_user}! Sila muat naik fail CSV di bar sisi untuk memulakan analisis lot.")
 
     if st.sidebar.button("Log Keluar"):
         st.session_state.clear()
