@@ -36,9 +36,37 @@ def reset_password_dialog():
 
 def check_password():
     if "password_correct" not in st.session_state:
+        # --- VIDEO LATAR BELAKANG UNTUK LOGIN ---
+        # Anda boleh tukar URL video di bawah kepada video kegemaran anda (format .mp4 direct link)
+        video_html = """
+            <style>
+            #myVideo {
+                position: fixed;
+                right: 0;
+                bottom: 0;
+                min-width: 100%; 
+                min-height: 100%;
+                z-index: -1;
+                filter: brightness(0.4);
+            }
+            .login-box {
+                background-color: rgba(255, 255, 255, 0.1);
+                padding: 30px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            </style>
+            <video autoplay muted loop id="myVideo">
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-top-view-of-a-construction-site-with-cranes-18652-large.mp4" type="video/mp4">
+            </video>
+        """
+        st.markdown(video_html, unsafe_allow_html=True)
+
         _, col_mid, _ = st.columns([1, 1.5, 1])
         with col_mid:
-            st.markdown("<h2 style='text-align: center;'>🔐 Sistem Survey Lot PUO</h2>", unsafe_allow_html=True)
+            st.markdown('<div class="login-box">', unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: white;'>🔐 Sistem Survey Lot PUO</h2>", unsafe_allow_html=True)
             user_id = st.text_input("👤 Masukkan ID:", key="user_id")
             password = st.text_input("🔑 Masukkan Kata Laluan:", type="password", key="user_pass")
             st.markdown("<br>", unsafe_allow_html=True)
@@ -53,6 +81,7 @@ def check_password():
             
             if st.button("❓ Lupa Kata Laluan?", use_container_width=True):
                 reset_password_dialog()
+            st.markdown('</div>', unsafe_allow_html=True)
         return False
     return True
 
@@ -61,15 +90,26 @@ if check_password():
     
     display_name = st.session_state.get("user_id_logged", "Fakhrul")
     
+    # --- VIDEO DI SIDEBAR (DASHBOARD) ---
     st.sidebar.markdown(
         f"""
-        <div style="background: linear-gradient(135deg, #00B4DB, #0083B0); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #00B4DB, #0083B0); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 10px;">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" width="80" style="border-radius: 50%; border: 3px solid white;">
             <h3 style="color: white; margin-top: 10px; font-family: sans-serif;">Hai, {display_name}!</h3>
             <p style="color: #e0e0e0; font-size: 0.8em; margin-bottom: 0px;">Surveyor Berdaftar</p>
         </div>
         """, unsafe_allow_html=True
     )
+    
+    # Video Hiasan Sidebar (Contoh video dron survey atau teknologi)
+    sidebar_video_html = """
+        <div style="border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 1px solid #444;">
+            <video autoplay muted loop width="100%">
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-blue-grid-and-dots-background-23098-large.mp4" type="video/mp4">
+            </video>
+        </div>
+    """
+    st.sidebar.markdown(sidebar_video_html, unsafe_allow_html=True)
 
     col_logo, col_text = st.columns([1.2, 4])
     with col_logo:
@@ -184,9 +224,7 @@ if check_password():
                 # ================== BUTANG DOWNLOAD QGIS (GEOJSON) ==================
                 st.subheader("📥 Eksport Data")
                 
-                # Sediakan data GeoJSON
                 features = []
-                # Feature Poligon
                 poly_feature = {
                     "type": "Feature",
                     "properties": {"Name": "Lot Area", "Area_m2": area},
@@ -194,7 +232,6 @@ if check_password():
                 }
                 features.append(poly_feature)
                 
-                # Feature Point (Stesen)
                 for _, row in df.iterrows():
                     point_feature = {
                         "type": "Feature",
