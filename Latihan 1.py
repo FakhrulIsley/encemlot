@@ -28,7 +28,6 @@ def reset_password_dialog():
     pass_sah = st.text_input("Sahkan Kata Laluan Baharu:", type="password")
     
     if st.button("Simpan Kata Laluan", use_container_width=True):
-        # Mengekalkan logik asal tetapi menambah sokongan untuk ID aniq dan umar
         if id_sah in ["fakhrul", "aniq", "umar"] and pass_baru == pass_sah and pass_baru != "":
             st.success("✅ Kata laluan berjaya dikemaskini!")
             st.rerun()
@@ -45,10 +44,9 @@ def check_password():
             st.markdown("<br>", unsafe_allow_html=True)
             
             if st.button("Log Masuk", use_container_width=True):
-                # Menambah id aniq dan umar dengan password yang sama (123)
                 if user_id in ["fakhrul", "aniq", "umar"] and password == "123":
                     st.session_state["password_correct"] = True
-                    st.session_state["user_id_logged"] = user_id.capitalize() # Untuk paparan nama
+                    st.session_state["user_id_logged"] = user_id.capitalize()
                     st.rerun()
                 else:
                     st.error("😕 ID atau Kata Laluan salah.")
@@ -61,10 +59,8 @@ def check_password():
 # ================== MAIN APP (SELEPAS LOGIN) ==================
 if check_password():
     
-    # Menentukan nama yang dipaparkan di sidebar berdasarkan ID yang log masuk
     display_name = st.session_state.get("user_id_logged", "Fakhrul")
     
-    # --- 👤 PROFIL PENGGUNA DI SIDEBAR ---
     st.sidebar.markdown(
         f"""
         <div style="background: linear-gradient(135deg, #00B4DB, #0083B0); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
@@ -75,10 +71,8 @@ if check_password():
         """, unsafe_allow_html=True
     )
 
-    # --- HEADER DENGAN LOGO ---
     col_logo, col_text = st.columns([1.2, 4])
     with col_logo:
-        # Kod untuk memaparkan logo_puo.png dalam bulatan merah yang anda tanda
         if os.path.exists("logo_puo.png"):
             st.image("logo_puo.png", width=220)
         else:
@@ -119,7 +113,6 @@ if check_password():
     label_size_stn = st.sidebar.slider("Saiz Bulatan Stesen", 15, 30, 22) 
     label_size_data = st.sidebar.slider("Saiz Bearing/Jarak", 5, 12, 7)
     label_size_luas = st.sidebar.slider("Saiz Tulisan LUAS", 5, 20, 10)
-    dist_offset = st.sidebar.slider("Jarak Label ke Luar", 0.1, 5.0, 1.0)
 
     # ================== PEMPROSESAN DATA ==================
     if uploaded_file is not None:
@@ -127,18 +120,14 @@ if check_password():
             df = pd.read_csv(uploaded_file)
             
             if all(col in df.columns for col in ['STN', 'E', 'N']):
-                # Penukaran Koordinat (Cassini ke WGS84)
                 transformer = Transformer.from_crs("EPSG:4390", "EPSG:4326", always_xy=True)
                 df['lon'], df['lat'] = transformer.transform(df['E'].values, df['N'].values)
                 
                 coords_en = list(zip(df['E'], df['N']))
-                coords_ll = list(zip(df['lon'], df['lat']))
                 poly_geom = Polygon(coords_en)
-                poly_ll = Polygon(coords_ll) 
-                centroid_ll = poly_ll.centroid 
                 area = poly_geom.area
+                centroid_ll = Polygon(list(zip(df['lon'], df['lat']))).centroid 
 
-                # --- METRIK RINGKASAN ---
                 st.markdown("### 📊 Ringkasan Lot")
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Luas (m²)", f"{area:.2f}")
@@ -149,7 +138,6 @@ if check_password():
                 st.markdown("---")
                 st.subheader("📐 Paparan Pelan Ukur")
 
-                # --- PETA FOLIUM (SATELIT) ---
                 google_map_url = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
                 if map_provider == "Standard Map":
                     google_map_url = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
@@ -175,10 +163,12 @@ if check_password():
                         icon=folium.DivIcon(html=f'''<div style="transform: rotate({angle_geo}deg); text-align: center; width: 160px; margin-left: -80px; margin-top: {v_offset}px;">
                             <div style="font-size: {label_size_data}pt; color: white; text-shadow: 2px 2px 3px black; font-weight: bold;">{format_dms(bear)}<br><span style="color: #FFD700;">{dist:.2f}m</span></div></div>''')).add_to(m)
                     
-                    # Stesen Marker
+                    # --- BAHAGIAN YANG DIBETULKAN (STESEN MARKER DENGAN POPUP) ---
+                    popup_info = f"<b>Stesen {int(p1['STN'])}</b><br>N: {p1['N']:.3f}<br>E: {p1['E']:.3f}"
                     folium.Marker(
                         [p1['lat'], p1['lon']], 
-                        icon=folium.DivIcon(html=f'''<div style="background-color: white; border: 2px solid red; border-radius: 50%; width: {label_size_stn}px; height: {label_size_stn}px; display: flex; align-items: center; justify-content: center; font-size: {label_size_stn*0.6}px; font-weight: bold; color: black; margin-left: -{label_size_stn/2}px; margin-top: -{label_size_stn/2}px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);">{int(p1["STN"])}</div>''')
+                        popup=folium.Popup(popup_info, max_width=200),
+                        icon=folium.DivIcon(html=f'''<div style="background-color: white; border: 2px solid red; border-radius: 50%; width: {label_size_stn}px; height: {label_size_stn}px; display: flex; align-items: center; justify-content: center; font-size: {label_size_stn*0.6}px; font-weight: bold; color: black; margin-left: -{label_size_stn/2}px; margin-top: -{label_size_stn/2}px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;">{int(p1["STN"])}</div>''')
                     ).add_to(m)
 
                 if show_luas_label:
