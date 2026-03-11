@@ -28,8 +28,8 @@ def reset_password_dialog():
     pass_sah = st.text_input("Sahkan Kata Laluan Baharu:", type="password")
     
     if st.button("Simpan Kata Laluan", use_container_width=True):
-        # Tambah ID Aniq dan Umar dalam senarai yang dibenarkan
-        if id_sah in ["fakhrul", "aniq", "umar"] and pass_baru == pass_sah and pass_baru != "":
+        # Membenarkan reset untuk ketiga-tiga ID
+        if id_sah.lower() in ["fakhrul", "aniq", "umar"] and pass_baru == pass_sah and pass_baru != "":
             st.success(f"✅ Kata laluan untuk {id_sah} berjaya dikemaskini!")
             st.rerun()
         else:
@@ -45,7 +45,7 @@ def check_password():
             st.markdown("<br>", unsafe_allow_html=True)
             
             if st.button("Log Masuk", use_container_width=True):
-                # Kemaskini senarai ID: fakhrul, aniq, umar
+                # SEMAKAN ID (Fakhrul, Aniq, Umar) & PASSWORD (123)
                 if user_id.lower() in ["fakhrul", "aniq", "umar"] and password == "123":
                     st.session_state["password_correct"] = True
                     st.session_state["user_logged_in"] = user_id.capitalize()
@@ -61,7 +61,7 @@ def check_password():
 # ================== MAIN APP (SELEPAS LOGIN) ==================
 if check_password():
     
-    # Ambil nama pengguna yang sedang log masuk
+    # Ambil nama pengguna yang sedang log masuk untuk paparan sidebar
     nama_user = st.session_state.get("user_logged_in", "User")
 
     # --- 👤 PROFIL PENGGUNA DI SIDEBAR ---
@@ -197,6 +197,7 @@ if check_password():
     else:
         st.info(f"👋 Selamat Datang, {nama_user}! Sila muat naik fail CSV di bar sisi untuk memulakan analisis lot.")
 
-    if st.sidebar.button("Log Keluar"):
+    # Butang Log Keluar
+    if st.sidebar.button("Log Keluar", use_container_width=True):
         st.session_state.clear()
         st.rerun()
