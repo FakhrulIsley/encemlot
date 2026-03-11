@@ -158,12 +158,10 @@ if check_password():
                     
                     v_offset = -20 if dN >= 0 else 5 
 
-                    # Label Bearing & Jarak
                     folium.Marker([ (p1['lat'] + p2['lat']) / 2, (p1['lon'] + p2['lon']) / 2],
                         icon=folium.DivIcon(html=f'''<div style="transform: rotate({angle_geo}deg); text-align: center; width: 160px; margin-left: -80px; margin-top: {v_offset}px;">
                             <div style="font-size: {label_size_data}pt; color: white; text-shadow: 2px 2px 3px black; font-weight: bold;">{format_dms(bear)}<br><span style="color: #FFD700;">{dist:.2f}m</span></div></div>''')).add_to(m)
                     
-                    # --- BAHAGIAN YANG DIBETULKAN (STESEN MARKER DENGAN POPUP) ---
                     popup_info = f"<b>Stesen {int(p1['STN'])}</b><br>N: {p1['N']:.3f}<br>E: {p1['E']:.3f}"
                     folium.Marker(
                         [p1['lat'], p1['lon']], 
@@ -182,6 +180,38 @@ if check_password():
                 st.markdown("---")
                 st.subheader("📋 Jadual Data Koordinat")
                 st.dataframe(df[['STN', 'E', 'N', 'lat', 'lon']], use_container_width=True)
+
+                # ================== BUTANG DOWNLOAD QGIS (GEOJSON) ==================
+                st.subheader("📥 Eksport Data")
+                
+                # Sediakan data GeoJSON
+                features = []
+                # Feature Poligon
+                poly_feature = {
+                    "type": "Feature",
+                    "properties": {"Name": "Lot Area", "Area_m2": area},
+                    "geometry": mapping(Polygon(list(zip(df['lon'], df['lat']))))
+                }
+                features.append(poly_feature)
+                
+                # Feature Point (Stesen)
+                for _, row in df.iterrows():
+                    point_feature = {
+                        "type": "Feature",
+                        "properties": {"STN": int(row['STN']), "N": row['N'], "E": row['E']},
+                        "geometry": {"type": "Point", "coordinates": [row['lon'], row['lat']]}
+                    }
+                    features.append(point_feature)
+                
+                geojson_data = json.dumps({"type": "FeatureCollection", "features": features})
+                
+                st.download_button(
+                    label="💾 Muat Turun Fail untuk QGIS (.geojson)",
+                    data=geojson_data,
+                    file_name="survey_lot_puo.geojson",
+                    mime="application/json",
+                    use_container_width=True
+                )
 
             else: st.error("❌ Kolum STN, E, N tak jumpa dalam CSV!")
         except Exception as e: st.error(f"❌ Ada ralat: {e}")
