@@ -36,8 +36,6 @@ def reset_password_dialog():
 
 def check_password():
     if "password_correct" not in st.session_state:
-        # --- VIDEO LATAR BELAKANG UNTUK LOGIN ---
-        # Anda boleh tukar URL video di bawah kepada video kegemaran anda (format .mp4 direct link)
         video_html = """
             <style>
             #myVideo {
@@ -90,7 +88,6 @@ if check_password():
     
     display_name = st.session_state.get("user_id_logged", "Fakhrul")
     
-    # --- VIDEO DI SIDEBAR (DASHBOARD) ---
     st.sidebar.markdown(
         f"""
         <div style="background: linear-gradient(135deg, #00B4DB, #0083B0); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 10px;">
@@ -101,7 +98,6 @@ if check_password():
         """, unsafe_allow_html=True
     )
     
-    # Video Hiasan Sidebar (Contoh video dron survey atau teknologi)
     sidebar_video_html = """
         <div style="border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: 1px solid #444;">
             <video autoplay muted loop width="100%">
@@ -164,9 +160,10 @@ if check_password():
                 df['lon'], df['lat'] = transformer.transform(df['E'].values, df['N'].values)
                 
                 coords_en = list(zip(df['E'], df['N']))
+                coords_ll = list(zip(df['lon'], df['lat']))
                 poly_geom = Polygon(coords_en)
                 area = poly_geom.area
-                centroid_ll = Polygon(list(zip(df['lon'], df['lat']))).centroid 
+                centroid_ll = Polygon(coords_ll).centroid 
 
                 st.markdown("### 📊 Ringkasan Lot")
                 col1, col2, col3, col4 = st.columns(4)
@@ -221,33 +218,76 @@ if check_password():
                 st.subheader("📋 Jadual Data Koordinat")
                 st.dataframe(df[['STN', 'E', 'N', 'lat', 'lon']], use_container_width=True)
 
-                # ================== BUTANG DOWNLOAD QGIS (GEOJSON) ==================
-                st.subheader("📥 Eksport Data")
+                # ================== EKSPORT GEOJSON (LAYERED) ==================
+                st.subheader("📥 Eksport Data ke QGIS")
                 
                 features = []
+                
+                # 1. LAYER POLYGON (Kawasan Lot)
                 poly_feature = {
                     "type": "Feature",
-                    "properties": {"Name": "Lot Area", "Area_m2": area},
-                    "geometry": mapping(Polygon(list(zip(df['lon'], df['lat']))))
+                    "properties": {
+                        "Layer": "Lot_Kawasan",
+                        "Nama": "Kawasan Lot PUO",
+                        "Luas_m2": round(area, 3),
+                        "Luas_Ekar": round(area/4046.856, 4)
+                    },
+                    "geometry": mapping(Polygon(coords_ll))
                 }
                 features.append(poly_feature)
                 
-                for _, row in df.iterrows():
+                # 2. LAYER LINESTRING (Garisan Sempadan)
+                # Tambah stesen pertama di akhir untuk menutup loop
+                line_coords = coords_ll + [coords_ll[0]]
+                line_feature = {
+                    "type": "Feature",
+                    "properties": {
+                        "Layer": "Sempadan_Line",
+                        "Info": "Garisan Sempadan Lot"
+                    },
+                    "geometry": mapping(LineString(line_coords))
+                }
+                features.append(line_feature)
+                
+                # 3. LAYER POINT (Batu Sempadan / Stesen)
+                for i, row in df.iterrows():
+                    # Kira info bearing/jarak ke stesen seterusnya untuk disimpan dalam atribut point
+                    p2 = df.iloc[(i + 1) % len(df)]
+                    dE, dN = p2['E'] - row['E'], p2['N'] - row['N']
+                    dist = np.sqrt(dE**2 + dN**2)
+                    bear = (np.degrees(np.arctan2(dE, dN)) + 360) % 360
+
                     point_feature = {
                         "type": "Feature",
-                        "properties": {"STN": int(row['STN']), "N": row['N'], "E": row['E']},
+                        "properties": {
+                            "Layer": "Batu_Sempadan",
+                            "STN": int(row['STN']),
+                            "N_Cassini": row['N'],
+                            "E_Cassini": row['E'],
+                            "Ke_STN": int(p2['STN']),
+                            "Bearing": format_dms(bear),
+                            "Jarak_m": round(dist, 3)
+                        },
                         "geometry": {"type": "Point", "coordinates": [row['lon'], row['lat']]}
                     }
                     features.append(point_feature)
                 
-                geojson_data = json.dumps({"type": "FeatureCollection", "features": features})
+                geojson_full = {
+                    "type": "FeatureCollection",
+                    "name": "Survey_Lot_PUO_Complete",
+                    "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+                    "features": features
+                }
+                
+                geojson_str = json.dumps(geojson_full, indent=4)
                 
                 st.download_button(
-                    label="💾 Muat Turun Fail untuk QGIS (.geojson)",
-                    data=geojson_data,
-                    file_name="survey_lot_puo.geojson",
+                    label="💾 Muat Turun Fail Lengkap QGIS (.geojson)",
+                    data=geojson_str,
+                    file_name="survey_lot_lengkap.geojson",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
+                    help="Fail ini mengandungi layer Polygon, Line, dan Point yang boleh dibaca terus oleh QGIS."
                 )
 
             else: st.error("❌ Kolum STN, E, N tak jumpa dalam CSV!")
